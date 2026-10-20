@@ -1,0 +1,38 @@
+Python: historia, usos y ecosistema
+Documento de prueba para el ejercicio de conteo de palabras
+
+Capítulo 1: Los orígenes de Python
+
+Python es un lenguaje de programación creado por Guido van Rossum a finales de los años ochenta. Desde entonces, Python se ha convertido en uno de los lenguajes más usados del mundo, tanto en la industria como en la educación. La sencillez de su sintaxis hace que Python sea ideal para quien empieza a programar, y al mismo tiempo lo suficientemente potente para proyectos grandes de ciencia de datos, inteligencia artificial y desarrollo web.
+
+Muchos estudiantes de la carrera de Desarrollo de Aplicaciones Web, conocida como DAW, comienzan su formación aprendiendo Python antes de pasar a otros lenguajes. Esto pasa porque Python permite entender conceptos de programación sin que la sintaxis se interponga en el camino del aprendizaje. Variables, tipos de datos, estructuras de control y funciones se explican de forma clara gracias a la legibilidad de Python.
+
+Capítulo 2: Variables y tipos de datos
+
+En Python, una variable no necesita que declares su tipo de antemano. Si escribes edad = 20, Python entiende automáticamente que edad es un número entero. Si escribes nombre = "Christian", Python entiende que nombre es una cadena de texto. Esta característica se llama tipado dinámico, y es una de las razones por las que Python resulta tan cómodo para programar rápido.
+
+Los tipos de datos básicos de Python son el entero (int), el decimal (float), la cadena de texto (str) y el booleano (bool). A estos se suman estructuras más complejas como la lista, la tupla, el diccionario y el conjunto. Cada tipo de dato en Python tiene su propio comportamiento, y entender bien cada tipo de dato es fundamental para programar sin errores.
+
+Capítulo 3: Funciones en Python
+
+Una función en Python se define con la palabra reservada def, seguida del nombre de la función y sus parámetros entre paréntesis. Las funciones permiten reutilizar código y organizar un programa en partes más pequeñas y manejables. Una función puede recibir datos de entrada, llamados argumentos, y puede devolver un resultado mediante la palabra return.
+
+Cuando una función no tiene un return explícito, Python devuelve None de forma automática. Es común en Python que una función llame a otra función, formando lo que se conoce como una cadena de llamadas. Dominar las funciones es uno de los pasos más importantes para cualquiera que quiera programar de forma profesional.
+
+Capítulo 4: Estructuras de control
+
+Python utiliza la instrucción if para tomar decisiones dentro de un programa. Junto a if existen elif y else, que permiten cubrir distintos caminos posibles según se cumplan o no ciertas condiciones. Los bucles for y while permiten repetir bloques de código, recorriendo listas, cadenas de texto o rangos de números.
+
+A diferencia de otros lenguajes, Python no usa llaves para delimitar bloques de código, sino la indentación. Esto obliga a que el código en Python sea ordenado y fácil de leer, aunque también exige cuidado porque un error de indentación puede romper todo el programa. Aun así, la mayoría de los programadores coinciden en que esta característica hace que el código Python sea más legible que el de otros lenguajes.
+
+Capítulo 5: El ecosistema de Python
+
+Alrededor de Python existe un ecosistema enorme de librerías y herramientas. Para ciencia de datos se usa Pandas y NumPy. Para inteligencia artificial se usa TensorFlow y PyTorch. Para desarrollo web existen frameworks como Django y Flask. Esta variedad es una de las razones por las que tantas empresas eligen Python para sus proyectos.
+
+El gestor de paquetes de Python, llamado pip, permite instalar librerías de terceros con un solo comando. Gracias a pip, un programador puede añadir funcionalidad avanzada a su programa en cuestión de segundos, sin tener que escribir ese código desde cero. Esta facilidad para reutilizar trabajo de otros es otra de las razones del éxito de Python.
+
+Capítulo 6: Python en la educación
+
+Cada vez más escuelas y academias de formación profesional, como los ciclos de DAW, incluyen Python en su programa de estudios. La actividad práctica de diez programas básicos, por ejemplo, está pensada para que el estudiante practique variables, tipos de datos, entrada de datos con input, conversión de tipos y operadores, todo usando Python como lenguaje principal.
+
+Aprender Python no solo sirve para programar. También ayuda a desarrollar el pensamiento lógico, a entender cómo funciona una computadora por dentro, y a resolver problemas paso a paso. Por todas estas razones, Python sigue siendo una de las mejores puertas de entrada al mundo de la programación para cualquier estudiante que empieza desde cero.
