@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><title>Examen Python: tickets_db</title>
+<style>
+@page{size:A4;margin:18mm 16mm}
+body{font-family:"Segoe UI",Arial,sans-serif;font-size:10.5pt;color:#1a1a1a;line-height:1.4}
+h1{font-size:18pt;margin:0 0 4mm}
+h2{font-size:13pt;margin:6mm 0 2mm;border-bottom:1px solid #bbb;padding-bottom:1mm}
+h3{font-size:11pt;margin:4mm 0 1.5mm}
+img{max-width:100%;border:1px solid #ccc;display:block;margin:2mm auto}
+.pb{page-break-before:always}
+table{border-collapse:collapse;width:100%;font-size:9.5pt;margin:2mm 0}
+th,td{border:1px solid #bbb;padding:1.2mm 2mm;text-align:left;vertical-align:top}
+th{background:#eee}
+code{font-family:Consolas,monospace;font-size:9pt;background:#f2f2f2;padding:0 1mm}
+p{margin:1.5mm 0}
+</style></head><body>
+
+<h1>Examen Python: generador SQL de tickets</h1>
+
+<h2>1. Diagrama de la base de datos <code>tickets_db</code></h2>
+<p>Obtenido en MySQL Workbench con <code>Database &gt; Reverse Engineer</code>. Muestra las 6 tablas y sus claves foráneas.</p>
+<img src="capturas/diagrama.png" style="width:120mm">
+
+<h2>2. Ejecución del programa</h2>
+<p>Comando: <code>python build_insert_from_tickets.py data_tickets\data_tickets</code></p>
+<img src="capturas/ejecucion.png">
+
+<div class="pb"></div>
+<h2>3. Vista parcial de <code>insert_ticket.sql</code></h2>
+<img src="capturas/sql.png">
+
+<h2>4. Explicación de <code>build_insert_from_tickets.py</code></h2>
+<p>El programa lee todos los <code>.txt</code> de la carpeta que recibe como argumento. Convierte cada ticket en un diccionario y genera <code>insert_ticket.sql</code> con los INSERT de las 6 tablas de <code>tickets_db</code>.</p>
+
+<h3>Funciones de parseo</h3>
+<p>Cada función recibe una línea y el diccionario del ticket, excepto <code>parsear_sucursal</code>, que recibe todas las líneas. Solo actúa si la línea empieza por su etiqueta.</p>
+<table>
+<tr><th>Función</th><th>Línea que lee</th><th>Qué guarda</th></tr>
+<tr><td><code>parsear_sucursal</code></td><td>Las 3 primeras líneas</td><td>Nombre, dirección, CIF y teléfono</td></tr>
+<tr><td><code>parsear_numero</code></td><td><code>Ticket:</code></td><td>Número del ticket como entero</td></tr>
+<tr><td><code>parsear_cajero</code></td><td><code>Cajero:</code></td><td>Tupla (código, nombre) del empleado</td></tr>
+<tr><td><code>parsear_fecha</code></td><td><code>Fecha:</code></td><td>Fecha y hora como <code>datetime</code></td></tr>
+<tr><td><code>parsear_pago</code></td><td><code>FORMA DE PAGO:</code> y <code>Autorización:</code></td><td>Forma de pago y código de autorización</td></tr>
+<tr><td><code>parsear_totales</code></td><td><code>SUBTOTAL</code>, <code>IVA</code>, <code>TOTAL</code></td><td>Los tres importes como <code>float</code></td></tr>
+<tr><td><code>parsear_producto</code></td><td>Líneas que empiezan por espacio y número</td><td>Tupla (cantidad, descripción, importe)</td></tr>
+</table>
+<p><code>parsear_lineas</code> llama a <code>parsear_sucursal</code> una vez. Después recorre todas las líneas y aplica las otras 6 funciones a cada una. Al final llama a <code>validar_ticket</code>.</p>
+
+<h3>Eliminación de duplicados con <code>setdefault</code></h3>
+<p><code>guardar_ticket</code> guarda cada sucursal, empleado, forma de pago y producto en un diccionario. La clave es el CIF, el código del cajero, el nombre del pago o la descripción del producto.</p>
+<p><code>setdefault(clave, valor)</code> solo inserta el valor si la clave no existe. Si el mismo empleado aparece en 20 tickets, se guarda una sola vez. El id nuevo se calcula con <code>len(diccionario) + 1</code>, así los ids son consecutivos.</p>
+
+<h3>Generación del SQL</h3>
+<p><code>generar_sql</code> recorre los diccionarios y escribe un INSERT por registro en <code>insert_ticket.sql</code>. El orden es sucursal, empleado, forma_pago, producto, ticket y ticket_linea, para que cada clave foránea ya exista al insertarse. La autorización se escribe como <code>NULL</code> cuando el ticket se paga en efectivo.</p>
+
+<h3>Validaciones</h3>
+<table>
+<tr><th>Validación</th><th>Dónde</th><th>Error que lanza</th></tr>
+<tr><td>Ticket repetido</td><td><code>guardar_ticket</code></td><td><code>ticket repetido: N</code></td></tr>
+<tr><td>Campos obligatorios (número, cajero, fecha, forma de pago, subtotal, IVA, total)</td><td><code>validar_ticket</code></td><td><code>falta el campo X</code></td></tr>
+<tr><td>Ticket con al menos un producto</td><td><code>validar_ticket</code></td><td><code>ticket sin productos</code></td></tr>
+<tr><td>Subtotal + IVA = total (redondeado a 2 decimales)</td><td><code>validar_ticket</code></td><td><code>subtotal + IVA no coincide con el total</code></td></tr>
+<tr><td>Suma de las líneas = subtotal</td><td><code>validar_ticket</code></td><td><code>la suma de productos no coincide con el subtotal</code></td></tr>
+<tr><td>Fecha válida</td><td><code>parsear_fecha</code></td><td><code>strptime</code> lanza <code>ValueError</code> si la fecha no existe</td></tr>
+<tr><td>CIF de 9 caracteres</td><td><code>parsear_sucursal</code></td><td><code>CIF incorrecto: X</code></td></tr>
+<tr><td>Número de ticket y código de cajero numéricos</td><td><code>parsear_numero</code>, <code>parsear_cajero</code></td><td><code>número de ticket incorrecto</code>, <code>código de cajero incorrecto</code></td></tr>
+<tr><td>Cantidad e importe mayores que 0</td><td><code>parsear_producto</code></td><td><code>cantidad o importe incorrecto</code></td></tr>
+</table>
+<p>Cada archivo se procesa dentro de un <code>try</code>. Si un ticket falla, el programa imprime el archivo y el motivo, lo descarta y sigue con el siguiente. Al terminar imprime el resumen con el número de tickets, empleados, productos y formas de pago.</p>
+</body></html>
