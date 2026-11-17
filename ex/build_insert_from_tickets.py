@@ -136,11 +136,11 @@ def generar_sql(datos, fichero):
     for numero, t in datos["ticket"].items():
         autorizacion = f"'{t['autorizacion']}'" if t["autorizacion"] else "NULL"
         sql.append(f"INSERT INTO ticket (numero, fecha_hora, empleado_id, subtotal, iva, total, forma_pago_id, autorizacion) "
-                   f"VALUES ({numero}, '{t['fecha']}', {t['cajero'][0]}, {t['subtotal']}, {t['iva']}, {t['total']}, "
-                   f"{datos['forma_pago'][t['forma_pago']]}, {autorizacion});")
+                f"VALUES ({numero}, '{t['fecha']}', {t['cajero'][0]}, {t['subtotal']}, {t['iva']}, {t['total']}, "
+                f"{datos['forma_pago'][t['forma_pago']]}, {autorizacion});")
         for cantidad, descripcion, importe in t["lineas"]:
             sql.append(f"INSERT INTO ticket_linea (ticket_numero, producto_id, cantidad, importe) "
-                       f"VALUES ({numero}, {datos['producto'][descripcion]['id']}, {cantidad}, {importe});")
+                    f"VALUES ({numero}, {datos['producto'][descripcion]['id']}, {cantidad}, {importe});")
     with open(fichero, "w", encoding="utf-8") as f:
         f.write("\n".join(sql))
 
