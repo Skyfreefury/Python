@@ -14,9 +14,7 @@ CREATE TABLE sucursal (
 -- id = codigo del cajero que sale en el ticket (015, 033...)
 CREATE TABLE empleado (
     id          INT PRIMARY KEY,
-    nombre      VARCHAR(100) NOT NULL,
-    sucursal_id INT NOT NULL,
-    FOREIGN KEY (sucursal_id) REFERENCES sucursal(id)
+    nombre      VARCHAR(100) NOT NULL
 );
 
 CREATE TABLE producto (
@@ -35,12 +33,14 @@ CREATE TABLE forma_pago (
 CREATE TABLE ticket (
     numero        INT PRIMARY KEY,
     fecha_hora    DATETIME NOT NULL,
+    sucursal_id   INT NOT NULL,
     empleado_id   INT NOT NULL,
     subtotal      DECIMAL(8,2) NOT NULL,
     iva           DECIMAL(8,2) NOT NULL,
     total         DECIMAL(8,2) NOT NULL,
     forma_pago_id INT NOT NULL,
     autorizacion  VARCHAR(10) NULL,
+    FOREIGN KEY (sucursal_id)   REFERENCES sucursal(id),
     FOREIGN KEY (empleado_id)   REFERENCES empleado(id),
     FOREIGN KEY (forma_pago_id) REFERENCES forma_pago(id)
 );
