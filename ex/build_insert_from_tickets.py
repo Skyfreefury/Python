@@ -6,18 +6,50 @@ from datetime import datetime
 
 def procesar_archivos(carpeta):
     datos = {"sucursal": {}, "empleado": {}, "producto": {}, "forma_pago": {}, "ticket": {}}
-    for archivo in os.listdir(carpeta):
-        if not archivo.endswith(".txt"):
-            continue
-        ruta = os.path.join(carpeta, archivo)
-        try:
-            with open(ruta, "r", encoding="utf-8") as f:
-                ticket = parsear_lineas(f.read().splitlines())
-                guardar_ticket(ticket, datos)
-        except Exception as e:
-            print(f"Error al procesar el archivo '{archivo}': {e}")
+    errores = 0
+    with open("errores.log", "w", encoding="utf-8") as log:
+        for archivo in sorted(os.listdir(carpeta)):
+            if not archivo.endswith(".txt"):
+                continue
+            ruta = os.path.join(carpeta, archivo)
+            try:
+                with open(ruta, "r", encoding="utf-8") as f:
+                    ticket = parsear_lineas(f.read().splitlines())
+                    guardar_ticket(ticket, datos)
+            except ErrorTicket as e:
+                registrar_error(log, archivo, e.numero, e.linea, e.tipo, e, e.texto)
+                errores += 1
+            except (OSError, UnicodeDecodeError) as e:
+                registrar_error(log, archivo, "?", "-", type(e).__name__, e, "")
+                errores += 1
+        if errores == 0:
+            log.write("Sin errores\n")
     print(f"Tickets: {len(datos['ticket'])} | Empleados: {len(datos['empleado'])} | Productos: {len(datos['producto'])} | Formas de pago: {len(datos['forma_pago'])}")
+    print(f"Errores: {errores} (ver errores.log)")
     return datos
+
+# ---------- Registro de errores: errores.log ----------
+
+class ErrorTicket(Exception):
+    def __init__(self, error, numero, linea, texto):
+        super().__init__(str(error))
+        self.tipo = type(error).__name__
+        self.numero = numero
+        self.linea = linea
+        self.texto = texto
+
+
+def buscar_numero(lineas):
+    for linea in lineas:
+        if linea.startswith("Ticket:"):
+            return linea.split(":")[1].strip()
+    return "?"
+
+
+def registrar_error(log, archivo, numero, linea, tipo, mensaje, texto):
+    fecha = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    log.write(f"{fecha} | {archivo} | ticket {numero} | línea {linea} | {tipo} | {mensaje} | {texto}\n")
+
 
 # ---------- Parseo: cada función lee y valida su línea del ticket ----------
 
@@ -96,24 +128,34 @@ def validar_ticket(ticket):
 
 def parsear_lineas(lineas):
     ticket = {"autorizacion": None, "lineas": []}
-    parsear_sucursal(lineas, ticket)
-    for linea in lineas:
-        parsear_numero(linea, ticket)
-        parsear_cajero(linea, ticket)
-        parsear_fecha(linea, ticket)
-        parsear_pago(linea, ticket)
-        parsear_totales(linea, ticket)
-        parsear_producto(linea, ticket)
-    validar_ticket(ticket)
+    numero = buscar_numero(lineas)
+    n = 0
+    try:
+        parsear_sucursal(lineas, ticket)
+        for n, linea in enumerate(lineas, 1):
+            parsear_numero(linea, ticket)
+            parsear_cajero(linea, ticket)
+            parsear_fecha(linea, ticket)
+            parsear_pago(linea, ticket)
+            parsear_totales(linea, ticket)
+            parsear_producto(linea, ticket)
+        n = None
+        validar_ticket(ticket)
+    except (ValueError, IndexError) as e:
+        if n == 0:
+            raise ErrorTicket(e, numero, "1-3", "cabecera de la sucursal")
+        if n is None:
+            raise ErrorTicket(e, numero, "-", "ticket completo")
+        raise ErrorTicket(e, numero, n, lineas[n - 1].strip())
     return ticket
 
 # ---------- Eliminación de duplicados: guarda cada dato una sola vez ----------
 
 def guardar_ticket(ticket, datos):
     if ticket["numero"] in datos["ticket"]:
-        raise ValueError(f"ticket repetido: {ticket['numero']}")
+        raise ErrorTicket(ValueError("ticket repetido"), ticket["numero"], "-", "ticket completo")
     datos["sucursal"].setdefault(ticket["cif"], {"id": len(datos["sucursal"]) + 1, "nombre": ticket["sucursal_nombre"], "direccion": ticket["sucursal_direccion"], "telefono": ticket["telefono"]})
-    datos["empleado"].setdefault(ticket["cajero"][0], {"nombre": ticket["cajero"][1], "sucursal_id": datos["sucursal"][ticket["cif"]]["id"]})
+    datos["empleado"].setdefault(ticket["cajero"][0], {"nombre": ticket["cajero"][1]})
     datos["forma_pago"].setdefault(ticket["forma_pago"], len(datos["forma_pago"]) + 1)
     for cantidad, descripcion, importe in ticket["lineas"]:
         datos["producto"].setdefault(descripcion, {"id": len(datos["producto"]) + 1, "precio": round(importe / cantidad, 2)})
@@ -128,15 +170,15 @@ def generar_sql(datos, fichero):
     for cif, s in datos["sucursal"].items():
         sql.append(f"INSERT INTO sucursal (id, cif, nombre, direccion, telefono) VALUES ({s['id']}, '{cif}', '{s['nombre']}', '{s['direccion']}', '{s['telefono']}');")
     for codigo, e in datos["empleado"].items():
-        sql.append(f"INSERT INTO empleado (id, nombre, sucursal_id) VALUES ({codigo}, '{e['nombre']}', {e['sucursal_id']});")
+        sql.append(f"INSERT INTO empleado (id, nombre) VALUES ({codigo}, '{e['nombre']}');")
     for nombre, id_pago in datos["forma_pago"].items():
         sql.append(f"INSERT INTO forma_pago (id, nombre) VALUES ({id_pago}, '{nombre}');")
     for descripcion, p in datos["producto"].items():
         sql.append(f"INSERT INTO producto (id, descripcion, precio) VALUES ({p['id']}, '{descripcion}', {p['precio']});")
     for numero, t in datos["ticket"].items():
         autorizacion = f"'{t['autorizacion']}'" if t["autorizacion"] else "NULL"
-        sql.append(f"INSERT INTO ticket (numero, fecha_hora, empleado_id, subtotal, iva, total, forma_pago_id, autorizacion) "
-                f"VALUES ({numero}, '{t['fecha']}', {t['cajero'][0]}, {t['subtotal']}, {t['iva']}, {t['total']}, "
+        sql.append(f"INSERT INTO ticket (numero, fecha_hora, sucursal_id, empleado_id, subtotal, iva, total, forma_pago_id, autorizacion) "
+                f"VALUES ({numero}, '{t['fecha']}', {datos['sucursal'][t['cif']]['id']}, {t['cajero'][0]}, {t['subtotal']}, {t['iva']}, {t['total']}, "
                 f"{datos['forma_pago'][t['forma_pago']]}, {autorizacion});")
         for cantidad, descripcion, importe in t["lineas"]:
             sql.append(f"INSERT INTO ticket_linea (ticket_numero, producto_id, cantidad, importe) "

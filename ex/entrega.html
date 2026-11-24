@@ -13,13 +13,14 @@ th,td{border:1px solid #bbb;padding:1.2mm 2mm;text-align:left;vertical-align:top
 th{background:#eee}
 code{font-family:Consolas,monospace;font-size:9pt;background:#f2f2f2;padding:0 1mm}
 p{margin:1.5mm 0}
+pre{font-family:Consolas,monospace;font-size:7.5pt;background:#f2f2f2;padding:2mm;white-space:pre-wrap;border:1px solid #ddd}
 </style></head><body>
 
 <h1>Examen Python: generador SQL de tickets</h1>
 
 <h2>1. Diagrama de la base de datos <code>tickets_db</code></h2>
-<p>Obtenido en MySQL Workbench con <code>Database &gt; Reverse Engineer</code>. Muestra las 6 tablas y sus claves foráneas.</p>
-<img src="capturas/diagrama.png" style="width:120mm">
+<p>Modelo de las 6 tablas con sus claves primarias (🔑) y foráneas (◆). <code>ticket</code> guarda la sucursal, el empleado y la forma de pago; <code>ticket_linea</code> une cada ticket con sus productos.</p>
+<img src="capturas/diagrama.png">
 
 <h2>2. Ejecución del programa</h2>
 <p>Comando: <code>python build_insert_from_tickets.py data_tickets\data_tickets</code></p>
@@ -56,7 +57,7 @@ p{margin:1.5mm 0}
 <h3>Validaciones</h3>
 <table>
 <tr><th>Validación</th><th>Dónde</th><th>Error que lanza</th></tr>
-<tr><td>Ticket repetido</td><td><code>guardar_ticket</code></td><td><code>ticket repetido: N</code></td></tr>
+<tr><td>Ticket repetido</td><td><code>guardar_ticket</code></td><td><code>ticket repetido</code></td></tr>
 <tr><td>Campos obligatorios (número, cajero, fecha, forma de pago, subtotal, IVA, total)</td><td><code>validar_ticket</code></td><td><code>falta el campo X</code></td></tr>
 <tr><td>Ticket con al menos un producto</td><td><code>validar_ticket</code></td><td><code>ticket sin productos</code></td></tr>
 <tr><td>Subtotal + IVA = total (redondeado a 2 decimales)</td><td><code>validar_ticket</code></td><td><code>subtotal + IVA no coincide con el total</code></td></tr>
@@ -66,5 +67,14 @@ p{margin:1.5mm 0}
 <tr><td>Número de ticket y código de cajero numéricos</td><td><code>parsear_numero</code>, <code>parsear_cajero</code></td><td><code>número de ticket incorrecto</code>, <code>código de cajero incorrecto</code></td></tr>
 <tr><td>Cantidad e importe mayores que 0</td><td><code>parsear_producto</code></td><td><code>cantidad o importe incorrecto</code></td></tr>
 </table>
-<p>Cada archivo se procesa dentro de un <code>try</code>. Si un ticket falla, el programa imprime el archivo y el motivo, lo descarta y sigue con el siguiente. Al terminar imprime el resumen con el número de tickets, empleados, productos y formas de pago.</p>
+<p>Cada archivo se procesa dentro de un <code>try</code>. Si un ticket falla, el programa lo descarta, anota el error en <code>errores.log</code> y sigue con el siguiente. Al terminar imprime el resumen con el número de tickets, empleados, productos, formas de pago y errores.</p>
+
+<h3>Registro de errores: <code>errores.log</code></h3>
+<p>Cada error se guarda como un <code>ErrorTicket</code> con el número de ticket, la línea del fichero y el texto de esa línea. <code>parsear_lineas</code> lleva la cuenta de la línea que está leyendo. El número de ticket se busca antes de validar, así aparece aunque el error esté en la cabecera. Los errores que dependen del ticket entero (totales o ticket repetido) llevan <code>-</code> como línea. El log se reescribe en cada ejecución; si no hay errores contiene <code>Sin errores</code>.</p>
+<p>Ejemplo con 5 tickets modificados a propósito (sin la columna de fecha y hora):</p>
+<pre>cajero_malo.txt | ticket 20010003 | línea 7 | ValueError | código de cajero incorrecto:  0X1 | Cajero: 0X1 - Carlos Ruiz
+cif_malo.txt | ticket 20010004 | línea 1-3 | ValueError | CIF incorrecto: B123 | cabecera de la sucursal
+fecha_mala.txt | ticket 20010002 | línea 6 | ValueError | day 31 must be in range 1..28 for month 2 in year 2025 | Fecha: 31/02/2025        Hora: 18:26
+total_malo.txt | ticket 20010001 | línea - | ValueError | subtotal + IVA no coincide con el total | ticket completo
+zz_repetido.txt | ticket 20010001 | línea - | ValueError | ticket repetido | ticket completo</pre>
 </body></html>

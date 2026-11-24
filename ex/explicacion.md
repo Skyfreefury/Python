@@ -32,7 +32,7 @@ Cada función recibe una línea y el diccionario del ticket, excepto `parsear_su
 
 | Validación | Dónde | Error que lanza |
 |---|---|---|
-| Ticket repetido | `guardar_ticket` | `ticket repetido: N` |
+| Ticket repetido | `guardar_ticket` | `ticket repetido` |
 | Campos obligatorios (número, cajero, fecha, forma de pago, subtotal, IVA, total) | `validar_ticket` | `falta el campo X` |
 | Ticket con al menos un producto | `validar_ticket` | `ticket sin productos` |
 | Subtotal + IVA = total (redondeado a 2 decimales) | `validar_ticket` | `subtotal + IVA no coincide con el total` |
@@ -42,4 +42,18 @@ Cada función recibe una línea y el diccionario del ticket, excepto `parsear_su
 | Número de ticket y código de cajero numéricos | `parsear_numero`, `parsear_cajero` | `número de ticket incorrecto`, `código de cajero incorrecto` |
 | Cantidad e importe mayores que 0 | `parsear_producto` | `cantidad o importe incorrecto` |
 
-Cada archivo se procesa dentro de un `try`. Si un ticket falla, el programa imprime el archivo y el motivo, lo descarta y sigue con el siguiente. Al terminar imprime el resumen con el número de tickets, empleados, productos y formas de pago.
+Cada archivo se procesa dentro de un `try`. Si un ticket falla, el programa lo descarta, anota el error en `errores.log` y sigue con el siguiente. Al terminar imprime el resumen con el número de tickets, empleados, productos, formas de pago y errores.
+
+## Registro de errores: `errores.log`
+
+Cada error se guarda como un `ErrorTicket` con el número de ticket, la línea del fichero y el texto de esa línea. `parsear_lineas` lleva la cuenta de la línea que está leyendo. El número de ticket se busca antes de validar, así aparece aunque el error esté en la cabecera. Los errores que dependen del ticket entero (totales o ticket repetido) llevan `-` como línea. El log se reescribe en cada ejecución; si no hay errores contiene `Sin errores`.
+
+Ejemplo con 5 tickets modificados a propósito (sin la columna de fecha y hora):
+
+```
+cajero_malo.txt | ticket 20010003 | línea 7 | ValueError | código de cajero incorrecto:  0X1 | Cajero: 0X1 - Carlos Ruiz
+cif_malo.txt | ticket 20010004 | línea 1-3 | ValueError | CIF incorrecto: B123 | cabecera de la sucursal
+fecha_mala.txt | ticket 20010002 | línea 6 | ValueError | day 31 must be in range 1..28 for month 2 in year 2025 | Fecha: 31/02/2025        Hora: 18:26
+total_malo.txt | ticket 20010001 | línea - | ValueError | subtotal + IVA no coincide con el total | ticket completo
+zz_repetido.txt | ticket 20010001 | línea - | ValueError | ticket repetido | ticket completo
+```
